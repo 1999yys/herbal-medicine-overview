@@ -2,21 +2,22 @@
   <div
     class="category-fan"
     :class="`category-fan--count-${bladeCount}`"
-    :style="{ '--fan-spread': `${spreadDeg}deg` }"
   >
-    <div
-      v-for="(item, index) in blades"
-      :key="item.id"
-      class="category-fan__blade"
-      :style="bladeStyle(index, bladeCount)"
-      @click.stop="emit('select', index)"
-    >
-      <img
-        :src="item.image"
-        :alt="item.name"
-        loading="lazy"
-        @error="onImageError($event, item)"
-      />
+    <div class="category-fan__stack">
+      <div
+        v-for="(item, index) in blades"
+        :key="item.id"
+        class="category-fan__blade"
+        :style="bladeStyle(index, bladeCount)"
+        @click.stop="emit('select', index)"
+      >
+        <img
+          :src="item.image"
+          :alt="item.name"
+          loading="lazy"
+          @error="onImageError($event, item)"
+        />
+      </div>
     </div>
 
     <span v-if="totalCount > maxBlades" class="category-fan__badge">
@@ -34,7 +35,7 @@ import { computed } from 'vue'
 const props = defineProps({
   images: { type: Array, required: true },
   maxBlades: { type: Number, default: 5 },
-  spreadDeg: { type: Number, default: 34 },
+  spreadDeg: { type: Number, default: 32 },
 })
 
 const emit = defineEmits(['select'])
@@ -46,11 +47,12 @@ const blades = computed(() => props.images.slice(0, props.maxBlades))
 const bladeCount = computed(() => blades.value.length)
 
 function bladeStyle(index, count) {
+  const spread = props.spreadDeg
+
   if (count <= 1) {
-    return { '--fan-angle': '0deg', zIndex: 2 }
+    return { '--fan-angle': '0deg', '--fan-angle-hover': '0deg', zIndex: 2 }
   }
 
-  const spread = props.spreadDeg
   const step = spread / (count - 1)
   const angle = -spread / 2 + step * index
   const center = (count - 1) / 2
@@ -58,7 +60,7 @@ function bladeStyle(index, count) {
 
   return {
     '--fan-angle': `${angle.toFixed(2)}deg`,
-    '--fan-angle-hover': `${(angle * 1.28).toFixed(2)}deg`,
+    '--fan-angle-hover': `${(angle * 1.85).toFixed(2)}deg`,
     zIndex: Math.round(zIndex) + 1,
   }
 }
@@ -76,14 +78,21 @@ function onImageError(e, item) {
   aspect-ratio: 4 / 3;
   overflow: hidden;
   background:
-    radial-gradient(ellipse 80% 55% at 50% 92%, rgba(45, 90, 39, 0.1) 0%, transparent 65%),
+    radial-gradient(ellipse 75% 55% at 50% 95%, rgba(45, 90, 39, 0.1) 0%, transparent 68%),
     var(--color-bg-warm);
+
+  &__stack {
+    position: absolute;
+    inset: 0;
+    transform-origin: 50% 100%;
+    transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+  }
 
   &__blade {
     position: absolute;
-    bottom: 4%;
     left: 50%;
-    height: 82%;
+    bottom: 6%;
+    height: var(--fan-height, 76%);
     width: auto;
     aspect-ratio: 3 / 4;
     transform: translateX(-50%) rotate(var(--fan-angle, 0deg));
@@ -95,7 +104,7 @@ function onImageError(e, item) {
       0 6px 16px rgba(26, 61, 22, 0.14),
       0 2px 4px rgba(26, 61, 22, 0.08);
     transition:
-      transform 0.4s cubic-bezier(0.22, 1, 0.36, 1),
+      transform 0.45s cubic-bezier(0.22, 1, 0.36, 1),
       box-shadow 0.3s ease;
     cursor: pointer;
 
@@ -120,38 +129,41 @@ function onImageError(e, item) {
     border-radius: 999px;
     z-index: 10;
     pointer-events: none;
+    transition: opacity 0.3s;
   }
 
-  &--count-1 .category-fan__blade {
-    height: 88%;
-    bottom: 5%;
+  &--count-1 {
+    --fan-height: 82%;
   }
 
-  &--count-2 .category-fan__blade {
-    height: 84%;
+  &--count-2 {
+    --fan-height: 78%;
   }
 
-  &--count-3 .category-fan__blade {
-    height: 82%;
+  &--count-3 {
+    --fan-height: 76%;
   }
 
-  &--count-4 .category-fan__blade {
-    height: 80%;
+  &--count-4 {
+    --fan-height: 74%;
   }
 
-  &--count-5 .category-fan__blade {
-    height: 78%;
+  &--count-5 {
+    --fan-height: 72%;
   }
 
-  &:hover &__blade {
-    transform: translateX(-50%) rotate(var(--fan-angle-hover, var(--fan-angle, 0deg)));
-    box-shadow:
-      0 10px 22px rgba(26, 61, 22, 0.18),
-      0 3px 6px rgba(26, 61, 22, 0.1);
-  }
+  // 悬停：整体放大并略向上，扇叶同时展开，铺满容器
+  &:hover {
+    .category-fan__stack {
+      transform: scale(1.14) translateY(-3%);
+    }
 
-  &--count-1:hover &__blade {
-    transform: translateX(-50%) rotate(0deg) translateY(-3px) scale(1.02);
+    .category-fan__blade {
+      transform: translateX(-50%) rotate(var(--fan-angle-hover, var(--fan-angle, 0deg)));
+      box-shadow:
+        0 10px 22px rgba(26, 61, 22, 0.18),
+        0 3px 6px rgba(26, 61, 22, 0.1);
+    }
   }
 }
 </style>
