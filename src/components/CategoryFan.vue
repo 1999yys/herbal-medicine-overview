@@ -32,10 +32,12 @@
 <script setup>
 import { computed } from 'vue'
 
+const HOVER_SPREAD_DEG = 59.2 // 32 × 1.85，保持悬停展开幅度不变
+
 const props = defineProps({
   images: { type: Array, required: true },
   maxBlades: { type: Number, default: 5 },
-  spreadDeg: { type: Number, default: 32 },
+  spreadDeg: { type: Number, default: 40 },
 })
 
 const emit = defineEmits(['select'])
@@ -55,12 +57,14 @@ function bladeStyle(index, count) {
 
   const step = spread / (count - 1)
   const angle = -spread / 2 + step * index
+  const stepHover = HOVER_SPREAD_DEG / (count - 1)
+  const angleHover = -HOVER_SPREAD_DEG / 2 + stepHover * index
   const center = (count - 1) / 2
   const zIndex = count - Math.abs(index - center)
 
   return {
     '--fan-angle': `${angle.toFixed(2)}deg`,
-    '--fan-angle-hover': `${(angle * 1.85).toFixed(2)}deg`,
+    '--fan-angle-hover': `${angleHover.toFixed(2)}deg`,
     zIndex: Math.round(zIndex) + 1,
   }
 }
@@ -91,8 +95,8 @@ function onImageError(e, item) {
   &__blade {
     position: absolute;
     left: 50%;
-    bottom: 6%;
-    height: var(--fan-height, 76%);
+    bottom: 5%;
+    height: var(--fan-height, 81%);
     width: auto;
     aspect-ratio: 3 / 4;
     transform: translateX(-50%) rotate(var(--fan-angle, 0deg));
@@ -133,23 +137,23 @@ function onImageError(e, item) {
   }
 
   &--count-1 {
-    --fan-height: 82%;
+    --fan-height: 88%;
   }
 
   &--count-2 {
-    --fan-height: 78%;
+    --fan-height: 84%;
   }
 
   &--count-3 {
-    --fan-height: 76%;
+    --fan-height: 82%;
   }
 
   &--count-4 {
-    --fan-height: 74%;
+    --fan-height: 80%;
   }
 
   &--count-5 {
-    --fan-height: 72%;
+    --fan-height: 78%;
   }
 
   // 悬停：整体放大并略向上，扇叶同时展开，铺满容器
