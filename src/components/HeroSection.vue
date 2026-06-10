@@ -80,7 +80,7 @@ function onImageError(e) {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    opacity: 0.78;
+    opacity: 0.85;
   }
 
   &__overlay {

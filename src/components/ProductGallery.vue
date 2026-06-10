@@ -9,7 +9,7 @@
 
       <div class="stage-selector" v-scroll-reveal:left role="tablist" aria-label="药材阶段选择">
         <button
-          v-for="(stage, index) in stages"
+          v-for="stage in stages"
           :key="stage.id"
           type="button"
           role="tab"
@@ -18,24 +18,11 @@
           :aria-selected="activeStageId === stage.id"
           @click="selectStage(stage.id)"
         >
-          <!-- <span class="stage-selector__step">阶段 {{ index + 1 }}</span> -->
           <span class="stage-selector__icon" aria-hidden="true">{{ stage.icon }}</span>
           <span class="stage-selector__label">{{ stage.label }}</span>
           <span class="stage-selector__summary">{{ stage.summary }}</span>
         </button>
       </div>
-
-      <!-- <div class="stage-flow fade-in" aria-hidden="true">
-        <template v-for="(stage, index) in stages" :key="stage.id">
-          <span
-            class="stage-flow__node"
-            :class="{ 'stage-flow__node--active': activeStageId === stage.id }"
-          >
-            {{ stage.icon }} {{ stage.label }}
-          </span>
-          <span v-if="index < stages.length - 1" class="stage-flow__arrow">→</span>
-        </template>
-      </div> -->
 
       <Transition name="stage-panel" mode="out-in">
         <div :key="activeStageId" class="stage-panel">
@@ -47,42 +34,58 @@
             <p class="stage-panel__desc">{{ currentStage.description }}</p>
           </div>
 
-          <div class="stage-panel__section">
-            <h4 class="stage-panel__section-title">实拍图片</h4>
+          <div v-if="currentStage.imageCategories?.length" class="stage-panel__section">
+            <div class="stage-panel__section-head">
+              <h4 class="stage-panel__section-title">实拍图片</h4>
+              <p class="stage-panel__section-hint">按药材类别浏览，点击可预览并左右切换同类图片</p>
+            </div>
+
             <div class="products__grid">
               <article
-                v-for="(item, i) in currentStage.images"
-                :key="item.id"
-                class="product-card"
+                v-for="(category, i) in pagedCategories"
+                :key="category.id"
+                class="category-card"
                 v-scroll-reveal="{
                   direction: i % 2 === 0 ? 'left' : 'right',
                   delay: i * 100,
                 }"
-                @click="openPreview(item)"
+                @click="openCategoryPreview(category, 0)"
               >
-                <div class="product-card__image-wrap">
+                <div class="category-card__image-wrap">
                   <img
-                    :src="item.image"
-                    :alt="item.name"
-                    class="product-card__image"
+                    :src="getCategoryCover(category)"
+                    :alt="category.name"
+                    class="category-card__image"
                     loading="lazy"
-                    @error="onImageError($event, item)"
+                    @error="onCoverError($event, category)"
                   />
-                  <div class="product-card__origin">{{ item.origin }}</div>
+                  <span class="category-card__count">共 {{ category.images.length }} 张</span>
                 </div>
-                <div class="product-card__body">
-                  <h3 class="product-card__name">{{ item.name }}</h3>
-                  <p class="product-card__desc">{{ item.description }}</p>
+                <div class="category-card__body">
+                  <h3 class="category-card__name">{{ category.name }}</h3>
+                  <p v-if="category.origin" class="category-card__origin">{{ category.origin }}</p>
+                  <p class="category-card__desc">{{ category.summary }}</p>
                 </div>
               </article>
             </div>
+
+            <PaginationBar
+              v-if="categoryTotalPages > 1"
+              :current="categoryPage"
+              :total="categoryTotalPages"
+              @change="categoryPage = $event"
+            />
           </div>
 
-          <div v-if="currentStage.videos.length" class="stage-panel__section">
-            <h4 class="stage-panel__section-title">相关视频</h4>
+          <div v-if="currentStage.videos?.length" class="stage-panel__section">
+            <div class="stage-panel__section-head">
+              <h4 class="stage-panel__section-title">相关视频</h4>
+              <p class="stage-panel__section-hint">当前阶段视频介绍，支持分页浏览</p>
+            </div>
+
             <div class="videos__grid">
               <article
-                v-for="(item, i) in currentStage.videos"
+                v-for="(item, i) in pagedVideos"
                 :key="item.id"
                 class="video-card"
                 v-scroll-reveal="{
@@ -109,6 +112,13 @@
                 </div>
               </article>
             </div>
+
+            <PaginationBar
+              v-if="videoTotalPages > 1"
+              :current="videoPage"
+              :total="videoTotalPages"
+              @change="videoPage = $event"
+            />
           </div>
         </div>
       </Transition>
@@ -116,20 +126,58 @@
 
     <Teleport to="body">
       <Transition name="lightbox">
-        <div v-if="previewItem" class="lightbox" @click.self="closePreview">
+        <div
+          v-if="previewCategory"
+          class="lightbox"
+          role="dialog"
+          aria-modal="true"
+          :aria-label="`${previewCategory.name} 图片预览`"
+          @click.self="closePreview"
+        >
           <button class="lightbox__close" aria-label="关闭" @click="closePreview">×</button>
+
+          <button
+            v-if="previewCategory.images.length > 1"
+            class="lightbox__nav lightbox__nav--prev"
+            aria-label="上一张"
+            :disabled="previewIndex === 0"
+            @click.stop="prevImage"
+          >
+            ‹
+          </button>
+
           <div class="lightbox__content">
+            <div class="lightbox__header">
+              <span class="lightbox__category">{{ previewCategory.name }}</span>
+              <span class="lightbox__counter">
+                {{ previewIndex + 1 }} / {{ previewCategory.images.length }}
+              </span>
+            </div>
             <img
-              :src="previewItem.image"
-              :alt="previewItem.name"
+              :key="currentPreviewImage.id"
+              :src="currentPreviewImage.image"
+              :alt="currentPreviewImage.name"
               class="lightbox__img"
+              @error="onPreviewImageError"
             />
             <div class="lightbox__info">
-              <h3>{{ previewItem.name }}</h3>
-              <p class="lightbox__origin">{{ previewItem.origin }}</p>
-              <p>{{ previewItem.description }}</p>
+              <h3>{{ currentPreviewImage.name }}</h3>
+              <p v-if="previewCategory.origin" class="lightbox__origin">
+                {{ previewCategory.origin }}
+              </p>
+              <p>{{ currentPreviewImage.description }}</p>
             </div>
           </div>
+
+          <button
+            v-if="previewCategory.images.length > 1"
+            class="lightbox__nav lightbox__nav--next"
+            aria-label="下一张"
+            :disabled="previewIndex === previewCategory.images.length - 1"
+            @click.stop="nextImage"
+          >
+            ›
+          </button>
         </div>
       </Transition>
     </Teleport>
@@ -137,21 +185,62 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { siteConfig } from '@/config/site'
+import PaginationBar from '@/components/PaginationBar.vue'
 
 const stages = siteConfig.products.stages
+const categoriesPerPage = siteConfig.products.categoriesPerPage ?? 3
+const videosPerPage = siteConfig.products.videosPerPage ?? 3
+
 const activeStageId = ref(stages[0].id)
-const previewItem = ref(null)
+const categoryPage = ref(1)
+const videoPage = ref(1)
+const previewCategory = ref(null)
+const previewIndex = ref(0)
 const videoRefs = {}
 
 const currentStage = computed(
   () => stages.find((s) => s.id === activeStageId.value) ?? stages[0],
 )
 
+const categoryTotalPages = computed(() => {
+  const total = currentStage.value.imageCategories?.length ?? 0
+  return Math.max(1, Math.ceil(total / categoriesPerPage))
+})
+
+const videoTotalPages = computed(() => {
+  const total = currentStage.value.videos?.length ?? 0
+  return Math.max(1, Math.ceil(total / videosPerPage))
+})
+
+const pagedCategories = computed(() => {
+  const list = currentStage.value.imageCategories ?? []
+  const start = (categoryPage.value - 1) * categoriesPerPage
+  return list.slice(start, start + categoriesPerPage)
+})
+
+const pagedVideos = computed(() => {
+  const list = currentStage.value.videos ?? []
+  const start = (videoPage.value - 1) * videosPerPage
+  return list.slice(start, start + videosPerPage)
+})
+
+const currentPreviewImage = computed(() => {
+  if (!previewCategory.value) return { id: '', name: '', description: '', image: '' }
+  return previewCategory.value.images[previewIndex.value] ?? previewCategory.value.images[0]
+})
+
+function getCategoryCover(category) {
+  return category.cover ?? category.images[0]?.image ?? '/media/images/placeholder.svg'
+}
+
 function selectStage(id) {
   pauseAllVideos()
   activeStageId.value = id
+  categoryPage.value = 1
+  videoPage.value = 1
+  closePreview()
 }
 
 function pauseAllVideos() {
@@ -170,19 +259,51 @@ function setVideoRef(el, id) {
 
 watch(activeStageId, () => pauseAllVideos())
 
-function openPreview(item) {
-  previewItem.value = item
+watch(categoryPage, () => closePreview())
+
+function openCategoryPreview(category, index) {
+  previewCategory.value = category
+  previewIndex.value = index
   document.body.style.overflow = 'hidden'
 }
 
 function closePreview() {
-  previewItem.value = null
+  previewCategory.value = null
+  previewIndex.value = 0
   document.body.style.overflow = ''
 }
 
-function onImageError(e, item) {
+function prevImage() {
+  if (previewIndex.value > 0) previewIndex.value -= 1
+}
+
+function nextImage() {
+  if (previewCategory.value && previewIndex.value < previewCategory.value.images.length - 1) {
+    previewIndex.value += 1
+  }
+}
+
+function onKeydown(e) {
+  if (!previewCategory.value) return
+
+  if (e.key === 'Escape') closePreview()
+  if (e.key === 'ArrowLeft') prevImage()
+  if (e.key === 'ArrowRight') nextImage()
+}
+
+onMounted(() => window.addEventListener('keydown', onKeydown))
+onUnmounted(() => {
+  window.removeEventListener('keydown', onKeydown)
+  closePreview()
+})
+
+function onCoverError(e, category) {
   e.target.src = '/media/images/placeholder.svg'
-  e.target.alt = item.name
+  e.target.alt = category.name
+}
+
+function onPreviewImageError(e) {
+  e.target.src = '/media/images/placeholder.svg'
 }
 
 function onVideoError(e, item) {
@@ -238,22 +359,7 @@ function onVideoError(e, item) {
       .stage-selector__label {
         color: var(--color-primary-dark);
       }
-
-      .stage-selector__step {
-        background: var(--color-primary);
-        color: var(--color-white);
-      }
     }
-  }
-
-  &__step {
-    font-size: 0.75rem;
-    font-weight: 600;
-    letter-spacing: 0.05em;
-    padding: 4px 12px;
-    border-radius: 999px;
-    background: var(--color-bg-warm);
-    color: var(--color-text-muted);
   }
 
   &__icon {
@@ -272,35 +378,6 @@ function onVideoError(e, item) {
     font-size: 0.875rem;
     color: var(--color-text-muted);
     line-height: 1.5;
-  }
-}
-
-.stage-flow {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: 8px 12px;
-  margin-bottom: 40px;
-  padding: 14px 20px;
-  background: var(--color-bg-card);
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--color-border);
-
-  &__node {
-    font-size: 0.9375rem;
-    color: var(--color-text-muted);
-    transition: color 0.25s;
-
-    &--active {
-      color: var(--color-primary-dark);
-      font-weight: 600;
-    }
-  }
-
-  &__arrow {
-    color: var(--color-accent);
-    font-size: 1.125rem;
   }
 }
 
@@ -338,13 +415,22 @@ function onVideoError(e, item) {
     }
   }
 
+  &__section-head {
+    margin-bottom: 20px;
+  }
+
   &__section-title {
     font-family: var(--font-serif);
     font-size: 1.125rem;
     color: var(--color-primary-dark);
-    margin-bottom: 20px;
+    margin-bottom: 6px;
     padding-bottom: 10px;
     border-bottom: 1px solid var(--color-border);
+  }
+
+  &__section-hint {
+    font-size: 0.875rem;
+    color: var(--color-text-muted);
   }
 }
 
@@ -365,9 +451,10 @@ function onVideoError(e, item) {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 28px;
+  margin-bottom: 28px;
 }
 
-.product-card {
+.category-card {
   background: var(--color-bg-card);
   border-radius: var(--radius-md);
   overflow: hidden;
@@ -381,7 +468,7 @@ function onVideoError(e, item) {
     transform: translateY(-6px);
     box-shadow: var(--shadow-lg);
 
-    .product-card__image {
+    .category-card__image {
       transform: scale(1.05);
     }
   }
@@ -400,10 +487,10 @@ function onVideoError(e, item) {
     transition: transform 0.5s ease;
   }
 
-  &__origin {
+  &__count {
     position: absolute;
     bottom: 12px;
-    left: 12px;
+    right: 12px;
     padding: 4px 12px;
     background: rgba(26, 61, 22, 0.75);
     backdrop-filter: blur(4px);
@@ -420,6 +507,12 @@ function onVideoError(e, item) {
     font-family: var(--font-serif);
     font-size: 1.125rem;
     color: var(--color-primary-dark);
+    margin-bottom: 6px;
+  }
+
+  &__origin {
+    font-size: 0.8125rem;
+    color: var(--color-accent);
     margin-bottom: 8px;
   }
 
@@ -428,7 +521,7 @@ function onVideoError(e, item) {
     color: var(--color-text-muted);
     line-height: 1.6;
     display: -webkit-box;
-    -webkit-line-clamp: 3;
+    -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
@@ -436,8 +529,9 @@ function onVideoError(e, item) {
 
 .videos__grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 28px;
+  margin-bottom: 28px;
 }
 
 .video-card {
@@ -487,20 +581,24 @@ function onVideoError(e, item) {
   }
 
   &__body {
-    padding: 24px;
+    padding: 20px;
   }
 
   &__title {
     font-family: var(--font-serif);
-    font-size: 1.125rem;
+    font-size: 1.0625rem;
     color: var(--color-primary-dark);
     margin-bottom: 8px;
   }
 
   &__desc {
-    font-size: 0.9375rem;
+    font-size: 0.875rem;
     color: var(--color-text-muted);
     line-height: 1.6;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
   }
 }
 
@@ -508,12 +606,12 @@ function onVideoError(e, item) {
   position: fixed;
   inset: 0;
   z-index: 200;
-  background: rgba(26, 61, 22, 0.85);
+  background: rgba(26, 61, 22, 0.88);
   backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 24px;
+  padding: 24px 72px;
 
   &__close {
     position: absolute;
@@ -529,14 +627,50 @@ function onVideoError(e, item) {
     align-items: center;
     justify-content: center;
     transition: background 0.2s;
+    z-index: 2;
 
     &:hover {
       background: rgba(255, 255, 255, 0.25);
     }
   }
 
+  &__nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 48px;
+    height: 48px;
+    font-size: 2rem;
+    line-height: 1;
+    color: var(--color-white);
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s, opacity 0.2s;
+    z-index: 2;
+
+    &:hover:not(:disabled) {
+      background: rgba(255, 255, 255, 0.28);
+    }
+
+    &:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+
+    &--prev {
+      left: 20px;
+    }
+
+    &--next {
+      right: 20px;
+    }
+  }
+
   &__content {
-    max-width: 800px;
+    max-width: 880px;
     width: 100%;
     background: var(--color-bg-card);
     border-radius: var(--radius-lg);
@@ -544,19 +678,40 @@ function onVideoError(e, item) {
     box-shadow: var(--shadow-lg);
   }
 
+  &__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 24px;
+    background: var(--color-bg-warm);
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  &__category {
+    font-family: var(--font-serif);
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--color-primary-dark);
+  }
+
+  &__counter {
+    font-size: 0.875rem;
+    color: var(--color-text-muted);
+  }
+
   &__img {
     width: 100%;
-    max-height: 60vh;
-    object-fit: cover;
-    background: var(--color-bg-warm);
+    max-height: 62vh;
+    object-fit: contain;
+    background: #1a1a1a;
   }
 
   &__info {
-    padding: 28px 32px;
+    padding: 24px 28px;
 
     h3 {
       font-family: var(--font-serif);
-      font-size: 1.5rem;
+      font-size: 1.375rem;
       color: var(--color-primary-dark);
       margin-bottom: 8px;
     }
@@ -565,7 +720,7 @@ function onVideoError(e, item) {
   &__origin {
     color: var(--color-accent);
     font-size: 0.875rem;
-    margin-bottom: 12px;
+    margin-bottom: 10px;
   }
 
   &__info p:last-child {
@@ -597,26 +752,38 @@ function onVideoError(e, item) {
     grid-template-columns: 1fr;
   }
 
-  .stage-flow {
-    display: none;
-  }
-
-  .products__grid {
+  .products__grid,
+  .videos__grid {
     grid-template-columns: repeat(2, 1fr);
   }
 
-  .videos__grid {
-    grid-template-columns: 1fr;
+  .lightbox {
+    padding: 16px 56px;
   }
 }
 
 @media (max-width: 560px) {
-  .products__grid {
+  .products__grid,
+  .videos__grid {
     grid-template-columns: 1fr;
   }
 
-  .stage-selector__label {
-    font-size: 1.125rem;
+  .lightbox {
+    padding: 12px;
+
+    &__nav {
+      width: 40px;
+      height: 40px;
+      font-size: 1.5rem;
+
+      &--prev {
+        left: 8px;
+      }
+
+      &--next {
+        right: 8px;
+      }
+    }
   }
 }
 </style>
