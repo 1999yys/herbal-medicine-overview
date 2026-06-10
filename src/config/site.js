@@ -55,7 +55,7 @@ export const siteConfig = {
         imageCategories: [
           {
             id: 'goji-seedlings',
-            name: '枸杞类',
+            name: '枸杞',
             summary: '中宁优良品种扦插苗，涵盖育苗大棚与田间管理实拍。',
             origin: '宁夏中宁',
             images: [
@@ -63,31 +63,31 @@ export const siteConfig = {
                 id: 'goji-s1',
                 name: '枸杞育苗大棚',
                 description: '恒温大棚内整齐排列的枸杞扦插苗，株型匀称。',
-                image: '/media/images/product-2.svg',
+                image: '/media/images/product-1.jpg',
               },
               {
                 id: 'goji-s2',
                 name: '枸杞成苗近景',
                 description: '生长90天的成苗，根系发达，叶片浓绿。',
-                image: '/media/images/product-5.svg',
+                image: '/media/images/product-4.jpeg',
               },
               {
                 id: 'goji-s3',
                 name: '枸杞苗装箱待发',
                 description: '出圃前分拣包装，根部保湿处理，便于运输。',
-                image: '/media/images/product-2.svg',
+                image: '/media/images/product-2.png',
               },
               {
                 id: 'goji-s4',
                 name: '基地全景',
                 description: '规模化育苗基地外景，便于客户实地考察。',
-                image: '/media/images/product-5.svg',
+                image: '/media/images/product-3.jpeg',
               },
             ],
           },
           {
             id: 'ginseng-seedlings',
-            name: '人参类',
+            name: '人参',
             summary: '长白山优选参苗，五年参苗与种子均有供应。',
             origin: '吉林长白山',
             images: [
@@ -113,7 +113,7 @@ export const siteConfig = {
           },
           {
             id: 'astragalus-seedlings',
-            name: '黄芪类',
+            name: '黄芪',
             summary: '恒山道地黄芪种子与育苗记录。',
             origin: '内蒙古恒山',
             images: [
@@ -133,7 +133,7 @@ export const siteConfig = {
           },
           {
             id: 'angelica-seedlings',
-            name: '当归类',
+            name: '当归',
             summary: '甘肃岷县当归种苗，品种纯正。',
             origin: '甘肃岷县',
             images: [

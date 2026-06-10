@@ -51,16 +51,10 @@
                 }"
                 @click="openCategoryPreview(category, 0)"
               >
-                <div class="category-card__image-wrap">
-                  <img
-                    :src="getCategoryCover(category)"
-                    :alt="category.name"
-                    class="category-card__image"
-                    loading="lazy"
-                    @error="onCoverError($event, category)"
-                  />
-                  <span class="category-card__count">共 {{ category.images.length }} 张</span>
-                </div>
+                <CategoryFan
+                  :images="category.images"
+                  @select="(index) => openCategoryPreview(category, index)"
+                />
                 <div class="category-card__body">
                   <h3 class="category-card__name">{{ category.name }}</h3>
                   <p v-if="category.origin" class="category-card__origin">{{ category.origin }}</p>
@@ -188,6 +182,7 @@
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { siteConfig } from '@/config/site'
 import PaginationBar from '@/components/PaginationBar.vue'
+import CategoryFan from '@/components/CategoryFan.vue'
 
 const stages = siteConfig.products.stages
 const categoriesPerPage = siteConfig.products.categoriesPerPage ?? 3
@@ -230,10 +225,6 @@ const currentPreviewImage = computed(() => {
   if (!previewCategory.value) return { id: '', name: '', description: '', image: '' }
   return previewCategory.value.images[previewIndex.value] ?? previewCategory.value.images[0]
 })
-
-function getCategoryCover(category) {
-  return category.cover ?? category.images[0]?.image ?? '/media/images/placeholder.svg'
-}
 
 function selectStage(id) {
   pauseAllVideos()
@@ -296,11 +287,6 @@ onUnmounted(() => {
   window.removeEventListener('keydown', onKeydown)
   closePreview()
 })
-
-function onCoverError(e, category) {
-  e.target.src = '/media/images/placeholder.svg'
-  e.target.alt = category.name
-}
 
 function onPreviewImageError(e) {
   e.target.src = '/media/images/placeholder.svg'
@@ -467,36 +453,6 @@ function onVideoError(e, item) {
   &:hover {
     transform: translateY(-6px);
     box-shadow: var(--shadow-lg);
-
-    .category-card__image {
-      transform: scale(1.05);
-    }
-  }
-
-  &__image-wrap {
-    position: relative;
-    aspect-ratio: 4 / 3;
-    overflow: hidden;
-    background: var(--color-bg-warm);
-  }
-
-  &__image {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    transition: transform 0.5s ease;
-  }
-
-  &__count {
-    position: absolute;
-    bottom: 12px;
-    right: 12px;
-    padding: 4px 12px;
-    background: rgba(26, 61, 22, 0.75);
-    backdrop-filter: blur(4px);
-    color: var(--color-white);
-    font-size: 0.8125rem;
-    border-radius: 999px;
   }
 
   &__body {
