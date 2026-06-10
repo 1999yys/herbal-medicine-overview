@@ -10,12 +10,12 @@
       <div class="hero__overlay"></div>
     </div>
 
-    <div class="container hero__content fade-in">
-      <p class="hero__eyebrow">{{ siteConfig.brand.tagline }}</p>
-      <h1 class="hero__title">{{ siteConfig.hero.title }}</h1>
-      <p class="hero__subtitle">{{ siteConfig.hero.subtitle }}</p>
-      <p class="hero__desc">{{ siteConfig.hero.description }}</p>
-      <div class="hero__actions">
+    <div class="container hero__content">
+      <p class="hero__eyebrow" v-scroll-reveal="{ direction: 'left', delay: 0 }">{{ siteConfig.brand.tagline }}</p>
+      <h1 class="hero__title" v-scroll-reveal="{ direction: 'left', delay: 120 }">{{ siteConfig.hero.title }}</h1>
+      <p class="hero__subtitle" v-scroll-reveal="{ direction: 'left', delay: 220 }">{{ siteConfig.hero.subtitle }}</p>
+      <p class="hero__desc" v-scroll-reveal="{ direction: 'left', delay: 320 }">{{ siteConfig.hero.description }}</p>
+      <div class="hero__actions" v-scroll-reveal="{ direction: 'left', delay: 420 }">
         <a
           href="#products"
           class="hero__btn hero__btn--primary"

@@ -1,60 +1,81 @@
 <template>
   <section id="contact" class="section contact">
     <div class="container">
-      <div class="section-header fade-in">
+      <div class="section-header" v-scroll-reveal="'up'">
         <span class="section-tag">CONTACT</span>
         <h2 class="section-title">{{ siteConfig.contact.title }}</h2>
         <p class="section-subtitle">{{ siteConfig.contact.subtitle }}</p>
       </div>
 
-      <div class="contact__wrapper fade-in">
-        <div class="contact__card contact__card--primary">
+      <div class="contact__wrapper">
+        <div
+          v-for="(card, i) in contactCards"
+          :key="card.key"
+          class="contact__card"
+          :class="{ 'contact__card--primary': card.primary }"
+          v-scroll-reveal="{
+            direction: i % 2 === 0 ? 'left' : 'right',
+            delay: i * 100,
+          }"
+        >
           <div class="contact__card-header">
-            <span class="contact__icon">📞</span>
-            <h3>电话咨询</h3>
+            <span class="contact__icon">{{ card.icon }}</span>
+            <h3>{{ card.title }}</h3>
           </div>
-          <a :href="`tel:${siteConfig.contact.phone.replace(/-/g, '')}`" class="contact__value contact__value--large">
-            {{ siteConfig.contact.phone }}
+          <a
+            v-if="card.href"
+            :href="card.href"
+            class="contact__value"
+            :class="{ 'contact__value--large': card.primary }"
+          >
+            {{ card.value }}
           </a>
-          <p class="contact__hint">点击可直接拨打</p>
-        </div>
-
-        <div class="contact__card">
-          <div class="contact__card-header">
-            <span class="contact__icon">💬</span>
-            <h3>微信联系</h3>
-          </div>
-          <p class="contact__value">{{ siteConfig.contact.wechat }}</p>
-          <p class="contact__hint">添加微信时请备注「药材咨询」</p>
-        </div>
-
-        <div class="contact__card">
-          <div class="contact__card-header">
-            <span class="contact__icon">✉️</span>
-            <h3>电子邮箱</h3>
-          </div>
-          <a :href="`mailto:${siteConfig.contact.email}`" class="contact__value">
-            {{ siteConfig.contact.email }}
-          </a>
-        </div>
-
-        <div class="contact__card">
-          <div class="contact__card-header">
-            <span class="contact__icon">📍</span>
-            <h3>联系地址</h3>
-          </div>
-          <p class="contact__value">{{ siteConfig.contact.address }}</p>
-          <p class="contact__hint">{{ siteConfig.contact.workTime }}</p>
+          <p v-else class="contact__value">{{ card.value }}</p>
+          <p v-if="card.hint" class="contact__hint">{{ card.hint }}</p>
         </div>
       </div>
 
-      <p class="contact__note fade-in">{{ siteConfig.contact.note }}</p>
+      <p class="contact__note" v-scroll-reveal="'up'">{{ siteConfig.contact.note }}</p>
     </div>
   </section>
 </template>
 
 <script setup>
+import { computed } from 'vue'
 import { siteConfig } from '@/config/site'
+
+const contactCards = computed(() => [
+  {
+    key: 'phone',
+    primary: true,
+    icon: '📞',
+    title: '电话咨询',
+    value: siteConfig.contact.phone,
+    href: `tel:${siteConfig.contact.phone.replace(/-/g, '')}`,
+    hint: '点击可直接拨打',
+  },
+  {
+    key: 'wechat',
+    icon: '💬',
+    title: '微信联系',
+    value: siteConfig.contact.wechat,
+    hint: '添加微信时请备注「药材咨询」',
+  },
+  {
+    key: 'email',
+    icon: '✉️',
+    title: '电子邮箱',
+    value: siteConfig.contact.email,
+    href: `mailto:${siteConfig.contact.email}`,
+  },
+  {
+    key: 'address',
+    icon: '📍',
+    title: '联系地址',
+    value: siteConfig.contact.address,
+    hint: siteConfig.contact.workTime,
+  },
+])
 </script>
 
 <style scoped lang="scss">

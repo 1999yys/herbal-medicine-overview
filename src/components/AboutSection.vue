@@ -1,13 +1,13 @@
 <template>
   <section id="about" class="section about">
     <div class="container">
-      <div class="section-header fade-in">
+      <div class="section-header" v-scroll-reveal="'up'">
         <span class="section-tag">ABOUT</span>
         <h2 class="section-title">{{ siteConfig.about.title }}</h2>
       </div>
 
       <div class="about__grid">
-        <div class="about__text fade-in">
+        <div class="about__text" v-scroll-reveal:left>
           <p v-for="(para, i) in siteConfig.about.paragraphs" :key="i" class="about__para">
             {{ para }}
           </p>
@@ -17,8 +17,11 @@
           <div
             v-for="(item, i) in siteConfig.about.highlights"
             :key="item.label"
-            class="about__card fade-in"
-            :style="{ animationDelay: `${i * 0.1}s` }"
+            class="about__card"
+            v-scroll-reveal="{
+              direction: i % 2 === 0 ? 'right' : 'left',
+              delay: i * 120,
+            }"
           >
             <span class="about__icon">{{ item.icon }}</span>
             <h3 class="about__card-title">{{ item.label }}</h3>

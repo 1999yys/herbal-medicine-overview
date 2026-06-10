@@ -1,6 +1,6 @@
 <template>
   <footer class="footer">
-    <div class="container footer__inner">
+      <div class="container footer__inner" v-scroll-reveal="'up'">
       <div class="footer__brand">
         <img :src="siteConfig.brand.logo" :alt="siteConfig.brand.name" class="footer__logo" />
         <span>{{ siteConfig.brand.name }}</span>

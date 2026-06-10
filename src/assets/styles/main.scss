@@ -35,6 +35,7 @@
 html {
   scroll-behavior: smooth;
   font-size: 16px;
+  overflow-x: clip;
 }
 
 body {
@@ -133,6 +134,42 @@ button {
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+// Scroll-triggered reveal (inspired by kaneyama-kankou.ne.jp)
+.reveal {
+  --reveal-delay: 0ms;
+  --reveal-distance: clamp(48px, 8vw, 96px);
+  opacity: 0;
+  transition:
+    opacity 1s cubic-bezier(0.22, 1, 0.36, 1) var(--reveal-delay),
+    transform 1s cubic-bezier(0.22, 1, 0.36, 1) var(--reveal-delay);
+  will-change: opacity, transform;
+
+  &--left {
+    transform: translateX(calc(var(--reveal-distance) * -1));
+  }
+
+  &--right {
+    transform: translateX(var(--reveal-distance));
+  }
+
+  &--up {
+    transform: translateY(calc(var(--reveal-distance) * 0.55));
+  }
+
+  &.is-visible {
+    opacity: 1;
+    transform: translate(0, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
   }
 }
 

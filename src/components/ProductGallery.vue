@@ -1,13 +1,13 @@
 <template>
   <section id="products" class="section products">
     <div class="container">
-      <div class="section-header fade-in">
+      <div class="section-header" v-scroll-reveal="'up'">
         <span class="section-tag">PRODUCTS</span>
         <h2 class="section-title">{{ siteConfig.products.title }}</h2>
         <p class="section-subtitle">{{ siteConfig.products.subtitle }}</p>
       </div>
 
-      <div class="stage-selector fade-in" role="tablist" aria-label="药材阶段选择">
+      <div class="stage-selector" v-scroll-reveal:left role="tablist" aria-label="药材阶段选择">
         <button
           v-for="(stage, index) in stages"
           :key="stage.id"
@@ -39,7 +39,7 @@
 
       <Transition name="stage-panel" mode="out-in">
         <div :key="activeStageId" class="stage-panel">
-          <div class="stage-panel__intro">
+          <div class="stage-panel__intro" v-scroll-reveal:right>
             <h3 class="stage-panel__title">
               <span aria-hidden="true">{{ currentStage.icon }}</span>
               {{ currentStage.label }}
@@ -54,7 +54,10 @@
                 v-for="(item, i) in currentStage.images"
                 :key="item.id"
                 class="product-card"
-                :style="{ animationDelay: `${i * 0.06}s` }"
+                v-scroll-reveal="{
+                  direction: i % 2 === 0 ? 'left' : 'right',
+                  delay: i * 100,
+                }"
                 @click="openPreview(item)"
               >
                 <div class="product-card__image-wrap">
@@ -79,9 +82,13 @@
             <h4 class="stage-panel__section-title">相关视频</h4>
             <div class="videos__grid">
               <article
-                v-for="item in currentStage.videos"
+                v-for="(item, i) in currentStage.videos"
                 :key="item.id"
                 class="video-card"
+                v-scroll-reveal="{
+                  direction: i % 2 === 0 ? 'right' : 'left',
+                  delay: i * 120,
+                }"
               >
                 <div class="video-card__player">
                   <video
